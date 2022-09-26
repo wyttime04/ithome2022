@@ -1,0 +1,106 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: mcs
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: mcs
+  name: mcs
+spec:
+  selector:
+    matchLabels:
+      app: mcs
+  replicas: 1
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: mcs
+    spec:
+      nodeName: node3
+      volumes:
+      - name: mcs-data
+        hostPath:
+          path: /home/mcs
+          
+      containers:
+      - name: mcs
+        image: itzg/minecraft-server
+        
+        # volume
+        volumeMounts:
+        - name: mcs-data
+          mountPath: /data
+
+        # resource
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "1000m"
+          limits:
+            memory: "2.5Gi"
+            cpu: "2000m"
+
+        # port
+        ports:
+        - containerPort: 25565
+          name: mcs-port
+
+        # probes
+        startupProbe:
+          exec:
+            command:
+              - mc-health
+          initialDelaySeconds: 300
+          successThreshold: 1
+          failureThreshold: 3
+          periodSeconds: 10
+        livenessProbe:
+          tcpSocket:
+            port: 25565
+          initialDelaySeconds: 10
+          timeoutSeconds: 1
+          successThreshold: 1
+          failureThreshold: 3
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command:
+              - mc-health
+          initialDelaySeconds: 10
+          timeoutSeconds: 1
+          successThreshold: 1
+          failureThreshold: 3
+          periodSeconds: 10
+        
+        # env
+        env:
+        - name: EULA
+          value: "TRUE"
+        - name: VERSION
+          value: 1.19.2
+        - name: MEMORY
+          value: 2G
+        - name: TZ
+          value: Asia/Taipei
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: mcs
+  name: mcs
+spec:
+  selector:
+    app: mcs
+  ports:
+  - name: mcs-port
+    protocol: TCP
+    port: 25565
+    targetPort: mcs-port
+  externalIPs:
+  - 10.2.0.1
