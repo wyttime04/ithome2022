@@ -1,0 +1,134 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: test
+
+# 使用 configMap 存 index.html
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: web1
+  namespace: test
+data:
+  index.html: |
+    <!DOCTYPE html><html><body><h1>This is web1~~</h1></body></html>
+  default.conf: |
+    server {
+         listen 80;
+         listen [::]:80;
+         root /usr/share/nginx/html;
+         index index.html;
+         location / {
+          try_files /index.html =404;
+         }
+    }
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: web2
+  namespace: test
+data:
+  index.html: |
+    <!DOCTYPE html><html><body><h1>This is web2~~</h1></body></html>
+  default.conf: |
+    server {
+         listen 80;
+         listen [::]:80;
+         root /usr/share/nginx/html;
+         index index.html;
+         location / {
+          try_files /index.html =404;
+         }
+    }
+
+
+# 建立 Pod 使用 volume 掛 configMap
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  namespace: test
+  name: test-pod1
+  labels:
+    web: "1"
+spec:
+  containers:
+    - image: nginx:1.23
+      name: nginx
+      resources:
+        limits:
+          cpu: 100m
+          memory: 100Mi
+      volumeMounts:
+        - name: web
+          mountPath: /usr/share/nginx/html/index.html
+          subPath: index.html
+          readOnly: true
+        - name: web
+          mountPath: /etc/nginx/conf.d/default.conf
+          subPath: default.conf
+          readOnly: true
+  volumes:
+    - name: web
+      configMap:
+        name: web1
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  namespace: test
+  name: test-pod2
+  labels:
+    web: "2"
+spec:
+  containers:
+    - image: nginx:1.23
+      name: nginx
+      resources:
+        limits:
+          cpu: 100m
+          memory: 100Mi
+      volumeMounts:
+        - name: web
+          mountPath: /usr/share/nginx/html/index.html
+          subPath: index.html
+          readOnly: true
+        - name: web
+          mountPath: /etc/nginx/conf.d/default.conf
+          subPath: default.conf
+          readOnly: true
+  volumes:
+    - name: web
+      configMap:
+        name: web2
+
+
+# 建立 Service
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: test-service1
+  namespace: test
+spec:
+  selector:
+    web: "1"
+  ports:
+  - name: http
+    port: 80
+    targetPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: test-service2
+  namespace: test
+spec:
+  selector:
+    web: "2"
+  ports:
+  - name: http
+    port: 80
+    targetPort: 80

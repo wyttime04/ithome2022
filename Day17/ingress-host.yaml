@@ -1,0 +1,35 @@
+# 建立 Ingress
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: web-host
+  namespace: test
+  labels:
+    name: web
+    environment: production
+    method: traefik
+spec:
+  rules:  # 設定不同 host
+  - host: web1.example.domain.com
+    http:
+      paths:
+      - pathType: Prefix
+        path: "/"
+        backend:
+          service:
+            name: test-service1
+            port: 
+              name: http
+  - host: web2.example.domain.com
+    http:
+      paths:
+      - pathType: Prefix
+        path: "/"
+        backend:
+          service:
+            name: test-service2
+            port: 
+              name: http
+
+
