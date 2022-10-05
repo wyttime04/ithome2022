@@ -1,0 +1,109 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  labels:
+    environment: production
+    method: traefik
+  name: gitlab-kas
+  namespace: gitlab
+spec:
+  rules:
+  - host: kas.example.domain.com
+    http:
+      paths:
+      - backend:
+          service:
+            name: gitlab-kas
+            port:
+              number: 8150
+        path: /
+        pathType: Prefix
+      - backend:
+          service:
+            name: gitlab-kas
+            port:
+              number: 8154
+        path: /k8s-proxy/
+        pathType: Prefix
+  tls:
+  - hosts:
+    - kas.example.domain.com
+    secretName: gitlab-tls
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  labels:
+    environment: production
+    method: traefik
+  name: gitlab-minio
+  namespace: gitlab
+spec:
+  rules:
+  - host: minio.example.domain.com
+    http:
+      paths:
+      - backend:
+          service:
+            name: gitlab-minio-svc
+            port:
+              number: 9000
+        path: /
+        pathType: Prefix
+  tls:
+  - hosts:
+    - minio.example.domain.com
+    secretName: gitlab-tls
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  labels:
+    environment: production
+    method: traefik
+  name: gitlab-registry
+  namespace: gitlab
+spec:
+  rules:
+  - host: registry.example.domain.com
+    http:
+      paths:
+      - backend:
+          service:
+            name: gitlab-registry
+            port:
+              number: 5000
+        path: /
+        pathType: Prefix
+  tls:
+  - hosts:
+    - registry.example.domain.com
+    secretName: gitlab-tls
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  labels:
+    environment: production
+    method: traefik
+  name: gitlab-webservice-default
+  namespace: gitlab
+spec:
+  rules:
+  - host: gitlab.example.domain.com
+    http:
+      paths:
+      - backend:
+          service:
+            name: gitlab-webservice-default
+            port:
+              number: 8181
+        path: /
+        pathType: Prefix
+  tls:
+  - hosts:
+    - gitlab.example.domain.com
+    secretName: gitlab-tls
