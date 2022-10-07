@@ -1,0 +1,27 @@
+color-primary-dark = #093170
+color-primary-main = #0d47a1
+color-primary-light = #3d6bb3
+
+color-secondary-dark = #b2741a
+color-secondary-main = #ffa726
+color-secondary-light = #ffb851
+
+color-remark-main = rgba(0, 0, 0, 0.54)
+
+for $type in 'primary' 'secondary' 'remark'
+    for $light in 'dark' 'main' 'light'
+        .{$type}-text-{$light}
+            color lookup('color-' + $type + '-' + $light)
+
+    .{$type}-text
+        color lookup('color-' + $type + '-main')
+
+    for $direction in 'top' 'right' 'bottom' 'left'
+        .{$type}-border-{$direction}
+            border-{$direction} 1px solid lookup('color-' + $type + '-main')
+
+        .{$type}-border-{$direction}-2
+            border-{$direction} 2px solid lookup('color-' + $type + '-main')
+
+        .{$type}-border-{$direction}-em
+            border-{$direction} 0.3em solid lookup('color-' + $type + '-main')

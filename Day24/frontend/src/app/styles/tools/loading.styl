@@ -1,0 +1,65 @@
+.skeleton-loading
+    animation 1.5s ease-in-out skeleton-loading 0s infinite
+    position relative
+    color #fff !important
+    display block
+    width 100%
+    height 1.5em
+
+    &:after
+        content ''
+        height 0.8em
+        width 100%
+        background-color rgb(183 183 183)
+        position absolute
+        left 0
+
+@keyframes skeleton-loading
+    0%
+        opacity 1
+
+    50%
+        opacity 0.5
+
+    100%
+        opacity 1
+
+.loading
+    position relative
+    height 30px
+    width 60px
+
+for $color in 'primary' 'secondary' 'default'
+    .dot-{$color}
+        if ($color == 'default')
+            background-color black
+        else
+            background-color lookup('color-' + $color + '-main')
+
+        position absolute
+        width 10px
+        height 10px
+        border-radius 50%
+        animation 1s ease-in-out loading calc(var(--i) * 0.1s) infinite
+        left calc(var(--i) * 15px)
+
+    .dot-width-1
+        width 5px
+        height 5px
+
+    .dot-width-2
+        width 10px
+        height 10px
+
+    .dot-text-{$color}
+        color lookup('color-' + $color + '-main')
+
+@keyframes loading
+    0%
+        top 0%
+
+    50%
+        top calc(100% - 10px)
+
+    100%
+        top 0%
