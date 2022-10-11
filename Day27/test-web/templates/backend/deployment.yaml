@@ -1,0 +1,86 @@
+{{- $backend := .Values.backend -}}
+{{- $backend_pvc := .Values.persistence.backend -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "test-web.backend" . }}
+  labels:
+    {{- include "test-web.labels" . | nindent 4 }}
+    app: backend
+spec:
+  selector:
+    matchLabels:
+      {{- include "test-web.selectorLabels" . | nindent 6 }}
+      app: backend
+  replicas: 1
+  strategy:
+    type: {{ $backend.updateStrategy.type }}
+    {{- if eq $backend.updateStrategy.type "RollingUpdate"  }}
+    rollingUpdate:
+      maxSurge: {{ $backend.updateStrategy.rollingUpdate.maxSurge }}
+      maxUnavailable: {{ $backend.updateStrategy.rollingUpdate.maxUnavailable }}
+    {{- else }}
+    rollingUpdate: null
+    {{- end }}
+  template:
+    metadata:
+      labels:
+        {{- include "test-web.selectorLabels" . | nindent 8 }}
+        app: backend
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      initContainers:
+        - name: init-backend
+          image: {{ $backend.init.image.repository }}:{{ $backend.init.image.tag }}
+          command: ["/bin/sh"]
+          args:
+            - "-c"
+            - "[ ! -e /app/data/todos.json ] && echo [] > /app/data/todos.json || true"
+          volumeMounts:
+            - name: data
+              mountPath: /app/data
+              subPath: {{ $backend_pvc.subPath }}
+      containers:
+        - name: backend
+          image: "{{ $backend.container.image.repository }}:{{ $backend.container.image.tag | default .Chart.AppVersion }}"
+          resources:
+            {{- toYaml $backend.container.resources | nindent 12 }}
+          livenessProbe:
+            tcpSocket:
+              port: {{ $backend.container.port }}
+            initialDelaySeconds: 5
+            timeoutSeconds: 5
+            successThreshold: 1
+            failureThreshold: 3
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /
+              port: {{ $backend.container.port }}
+            initialDelaySeconds: 5
+            timeoutSeconds: 2
+            successThreshold: 1
+            failureThreshold: 3
+            periodSeconds: 10
+          env:
+            - name: HOST_PORT
+              value: {{ $backend.container.port | quote }}
+          ports:
+            - containerPort: {{ $backend.container.port }}
+              name: backend
+          volumeMounts:
+            - name: data
+              mountPath: /app/data
+              subPath: {{ $backend_pvc.subPath }}
+      volumes:
+        - name: data
+        {{- if and $backend_pvc.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ $backend_pvc.existingClaim | default (include "test-web.backend" .) }}
+        {{- else }}
+          emptyDir: {}
+        {{- end }}
+      restartPolicy: Always

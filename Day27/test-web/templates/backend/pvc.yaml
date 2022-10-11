@@ -1,0 +1,23 @@
+{{- if and .Values.persistence.backend.enabled (not .Values.persistence.backend.existingClaim) }}
+{{- $backend_pvc := .Values.persistence.backend -}}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ template "test-web.backend" . }}
+  labels: {{- include "test-web.labels" . | nindent 4 }}
+  annotations:
+  {{- if eq $backend_pvc.resourcePolicy "keep" }}
+    helm.sh/resource-policy: keep
+  {{- end }}
+spec:
+    {{- if eq "-" $backend_pvc.storageClass }}
+  storageClassName: ""
+    {{- else }}
+  storageClassName: {{ $backend_pvc.storageClass }}
+    {{- end }}
+  accessModes:
+    - {{ $backend_pvc.accessMode }}
+  resources:
+    requests:
+      storage: {{ $backend_pvc.size }}
+{{- end }}

@@ -1,0 +1,26 @@
+{{- $backend := .Values.backend -}}
+{{- $backend_svc := .Values.service.backend -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "test-web.backend" . }}
+  labels:
+    {{- include "test-web.labels" . | nindent 4 }}
+spec:
+  selector:
+    {{- include "test-web.selectorLabels" . | nindent 4 }}
+    app: backend
+  type: {{ $backend_svc.type }}
+  sessionAffinity: None
+  sessionAffinityConfig:
+    clientIP:
+      timeoutSeconds: 10800
+  ports:
+    - name: http
+      protocol: TCP
+      port: {{ $backend.container.port }}
+      targetPort: {{ $backend_svc.port }}
+      {{- if eq $backend_svc.type "nodePort" }}
+      nodePort: {{ $backend_svc.nodePort }}
+      {{- end }}
+      

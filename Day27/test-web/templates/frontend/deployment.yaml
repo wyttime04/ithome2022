@@ -1,0 +1,62 @@
+{{- $frontend := .Values.frontend -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "test-web.frontend" . }}
+  labels:
+    {{- include "test-web.labels" . | nindent 4 }}
+    app: frontend
+spec:
+  selector:
+    matchLabels:
+      {{- include "test-web.selectorLabels" . | nindent 6 }}
+      app: frontend
+  replicas: 1
+  strategy:
+    type: {{ $frontend.updateStrategy.type }}
+    {{- if eq $frontend.updateStrategy.type "RollingUpdate"  }}
+    rollingUpdate:
+      maxSurge: {{ $frontend.updateStrategy.rollingUpdate.maxSurge }}
+      maxUnavailable: {{ $frontend.updateStrategy.rollingUpdate.maxUnavailable }}
+    {{- else }}
+    rollingUpdate: null
+    {{- end }}
+  template:
+    metadata:
+      labels:
+        {{- include "test-web.selectorLabels" . | nindent 8 }}
+        app: frontend
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: frontend
+          image: "{{ $frontend.container.image.repository }}:{{ $frontend.container.image.tag | default .Chart.AppVersion }}"
+          resources:
+            {{- toYaml $frontend.container.resources | nindent 12 }}
+          livenessProbe:
+            tcpSocket:
+              port: {{ $frontend.container.port }}
+            initialDelaySeconds: 5
+            timeoutSeconds: 5
+            successThreshold: 1
+            failureThreshold: 3
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /
+              port: {{ $frontend.container.port }}
+            initialDelaySeconds: 5
+            timeoutSeconds: 2
+            successThreshold: 1
+            failureThreshold: 3
+            periodSeconds: 10
+          env:
+            - name: BACKEND_URL
+              value: "{{ include "test-web.backend" . }}"
+          ports:
+            - containerPort: {{ $frontend.container.port }}
+              name: frontend
+      restartPolicy: Always
