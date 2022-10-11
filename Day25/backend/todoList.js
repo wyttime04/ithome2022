@@ -1,10 +1,10 @@
 const router = require('express').Router()
 const fs = require('fs')
-const data = require('./data/todos.json')
 
 const route = '/todolist'
 router.get(route, (req, res, next) => {
-    res.json({ data })
+    let data = JSON.parse(fs.readFileSync('./data/todos.json', 'utf8'))
+    res.json({ data }).end()
 })
 
 router.put(route, (req, res, next) => {
